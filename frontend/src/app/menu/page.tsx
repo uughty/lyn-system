@@ -200,7 +200,7 @@ export default function App() {
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('home')}>
           <div className="w-8 h-8 bg-[#B99470] rounded-lg flex items-center justify-center text-white font-black text-xs">S</div>
           <div className="text-xl font-black tracking-tighter uppercase">
-            SOFTTOUCH<span className="text-[#B99470]">.</span>
+            SWAHILI COASTAL CRUNCH<span className="text-[#B99470]">.</span>
           </div>
         </div>
         <div className="flex items-center gap-8">
@@ -502,7 +502,7 @@ export default function App() {
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-black font-black text-xs">S</div>
               <div className="text-xl font-black tracking-tighter uppercase">
-                SOFTTOUCH<span className="text-[#B99470]">.</span>
+                SWAHILI COASTAL CRUNCH<span className="text-[#B99470]">.</span>
               </div>
             </div>
             <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/20">
