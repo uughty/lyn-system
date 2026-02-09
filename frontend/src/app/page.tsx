@@ -195,10 +195,10 @@ export default function App() {
               {/* BRAND TAGS */}
               <div className="flex items-center gap-6 mb-8 overflow-hidden">
                  <div className="flex flex-col">
-                    <span className="text-[9px] font-black uppercase tracking-[0.5em] text-[#E87E44]">Est. 2025</span>
+                    <span className="text-[15px] font-black uppercase tracking-[0.5em] text-[#E87E44]">Est. 2025</span>
                     <span className="w-12 h-[2px] bg-[#E87E44] mt-1 transform origin-left animate-in slide-in-from-left duration-1000 delay-300"></span>
                  </div>
-                 <span className="text-[10px] font-black uppercase tracking-[0.5em] text-stone-500">Swahili & Aesthetical</span>
+                 <span className="text-[15px] font-black uppercase tracking-[0.5em] text-stone-500">Swahili & Aesthetical</span>
               </div>
 
               {/* SECONDARY IMAGE */}
@@ -257,12 +257,12 @@ export default function App() {
           <div className="space-y-8">
             <Reveal delay={200}>
               <div className="space-y-4">
-                <span className="text-[#E87E44] text-[9px] font-black uppercase tracking-[0.5em]">The Philosophy</span>
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif italic text-[#1A3C34] leading-tight">The Craft: A dialogue of spice and flame.</h2>
+                <span className="text-[#E87E44] text-[12px] font-black uppercase tracking-[0.5em]">The Philosophy</span>
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif italic !text-black leading-tight">The Craft: A dialogue of spice and flame.</h2>
               </div>
             </Reveal>
             <Reveal delay={400}>
-              <p className="text-stone-500 text-base md:text-lg leading-relaxed font-light">
+              <p className="text-stone-1000 text-base md:text-lg leading-relaxed font-light">
                 We celebrate the artisanal traditions of the coast. Every item on our menu is a testament to patience—from the 24-hour dough rest to the hand-toasting of whole aromatics.
               </p>
             </Reveal>
@@ -280,8 +280,8 @@ export default function App() {
         <div className="max-w-7xl mx-auto">
           <Reveal>
             <div className="text-center mb-20 space-y-4">
-              <span className="text-[#E87E44] text-[9px] font-black uppercase tracking-[0.7em]">Visual Journey</span>
-              <h2 className="text-4xl md:text-5xl font-serif italic text-[#1A3C34]">The Coastal Table</h2>
+              <span className=" text-4xl text-[#E87E44] text-[9px] font-black uppercase tracking-[0.7em]">Visual Journey</span>
+              <h2 className="text-4xl md:text-5xl font-serif italic !text-black">The Coastal Table</h2>
             </div>
           </Reveal>
 

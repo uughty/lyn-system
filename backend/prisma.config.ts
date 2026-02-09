@@ -1,10 +1,10 @@
-import { defineConfig } from "prisma/config";
+import { PrismaClient } from "@prisma/client";
 
-export default defineConfig({
-  datasource: {
-    url: process.env.DATABASE_URL,
-  },
-  migrations: {
-    seed: "ts-node ./prisma/seed.ts",
-  },
-});
+const prisma = new PrismaClient();
+
+async function main() {
+  const menuItems = await prisma.menuItem.findMany();
+  console.log(menuItems);
+}
+
+main();
