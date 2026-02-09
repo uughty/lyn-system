@@ -5,7 +5,8 @@ import {
   Leaf, 
   Mail, 
   MapPin,
-  ExternalLink
+  ExternalLink,
+  Phone
 } from 'lucide-react';
 
 // --- BRAND ASSETS ---
@@ -178,8 +179,8 @@ export default function App() {
           
           {/* TEXT ON THE LEFT PANEL BLANK SPACE */}
           <div className="absolute left-8 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-6">
-            <div className="w-px h-32 bg-white/60"></div>
-            <p className="writing-v text-[10px] font-black uppercase tracking-[0.8em] text-white drop-shadow-lg">
+            <div className="w-px h-32 bg-black"></div>
+            <p className="writing-v text-[9px] font-black uppercase tracking-[0.8em] text-white drop-shadow-lg">
                 Tradition • Heritage • Spice
             </p>
           </div>
@@ -330,7 +331,7 @@ export default function App() {
             <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-12">
               <Reveal delay={200}>
                 <div className="space-y-6">
-                  <h5 className="text-[9px] font-black uppercase tracking-[0.5em] text-[#E87E44]">Quick Links</h5>
+                  <h5 className="text-[10px] font-black uppercase tracking-[0.5em] text-[#E87E44]">Quick Links</h5>
                   <ul className="space-y-3 text-[10px] font-medium text-stone-400 uppercase tracking-widest">
                     <li className="hover:text-white cursor-pointer transition-colors"><a href="/menu">The Menu</a></li>
                     <li className="hover:text-white cursor-pointer transition-colors">Gift Cards</li>
@@ -340,13 +341,16 @@ export default function App() {
               </Reveal>
               <Reveal delay={400}>
                 <div className="space-y-6">
-                  <h5 className="text-[9px] font-black uppercase tracking-[0.5em] text-[#E87E44]">Contact Us</h5>
+                  <h5 className="text-[10px] font-black uppercase tracking-[0.5em] text-[#E87E44]">Contact Us</h5>
                   <ul className="space-y-3 text-[10px] font-medium text-stone-400 uppercase tracking-widest">
                     <li className="flex items-center gap-2 hover:text-white transition-colors group cursor-pointer lowercase">
-                      <Mail size={12} /> <a href="mailto:hello@swahili.com">hello@swahili.com</a>
+                      <Mail size={12} /> <a href="mailto:hello@swahili.com">lenvixochieng@gmail.com</a>
+                    </li>
+                    <li className="flex items-center gap-2 hover:text-white transition-colors group cursor-pointer lowercase">
+                      <Phone size={12} /> <a href="tel:+1234567890">+1 8167451565</a>
                     </li>
                     <li className="flex items-center gap-2 hover:text-white transition-colors group cursor-pointer capitalize">
-                      <MapPin size={12} /> <a href="/contact">Coastal Quarter, EC2</a>
+                      <MapPin size={12} /> <a href="/contact">Kansas, City</a>
                     </li>
                   </ul>
                 </div>
@@ -355,7 +359,7 @@ export default function App() {
           </div>
 
           <div className="pt-10 flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] text-stone-500 font-bold uppercase tracking-[0.5em]">
-            <p>© 2024 SWAHILI COASTAL CRUNCH. ALL RIGHTS RESERVED.</p>
+            <p>© 2026 SWAHILI COASTAL CRUNCH. ALL RIGHTS RESERVED.</p>
             <div className="flex gap-8">
                <span className="hover:text-[#E87E44] cursor-pointer transition-colors">Privacy Policy</span>
                <span className="hover:text-[#E87E44] cursor-pointer transition-colors">Terms of Service</span>
