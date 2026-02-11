@@ -1,372 +1,379 @@
-'use client';
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  ArrowRight, 
-  Leaf, 
-  Mail, 
-  MapPin,
-  ExternalLink,
-  Phone
-} from 'lucide-react';
+"use client";
+import React, { useState } from 'react';
+import { ShoppingCart, Search, Menu as MenuIcon, X, Mail, Phone, Instagram, Facebook, Twitter, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence, easeInOut } from "framer-motion";
 
-// --- BRAND ASSETS ---
-const LOGO_URL = "/logo1.png"; 
+const App = () => {
+  const [view, setView] = useState('home');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-// --- HERO BACKGROUNDS ---
-const HERO_IMAGE_PRIMARY = "/samosa1.jpg";
-const HERO_IMAGE_SECONDARY = "/kaimati.jpg";
-
-// --- GALLERY DATA ---
-const GALLERY_IMAGES = [
-  { url: "/naan.jpg", title: "NaaN" },
-  { url: "chapo.jpg", title: "Chapati" },
-  { url: "ngumu.jpg", title: "Crunchy Half Cakes" },
-  { url: "/mahamri.jpg", title: "Mahamri" },
-  { url: "/sam.jpg", title: "Samosa" },
-  { url: "/kaimati2.webp", title: "Kaimati" }
-];
-
-const Reveal = ({ 
-  children, 
-  width = "w-full", 
-  delay = 0, 
-  direction = "up" 
-}: { 
-  children: React.ReactNode; 
-  width?: string; 
-  delay?: number; 
-  direction?: string; 
-}) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.unobserve(entry.target as HTMLElement);
-        }
-      },
-      { threshold: 0.1 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
-  const getTransform = () => {
-    if (isVisible) return 'translate(0, 0)';
-    switch (direction) {
-      case 'up': return 'translateY(30px)';
-      case 'down': return 'translateY(-30px)';
-      case 'left': return 'translateX(30px)';
-      case 'right': return 'translateX(-30px)';
-      default: return 'translateY(30px)';
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
     }
+    setIsMenuOpen(false);
+  };
+
+  const fadeInUp = {
+    initial: { opacity: 0, y: 40 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true },
+    transition: {
+      duration: 0.6,
+      ease: easeInOut,
+    },
   };
 
   return (
-    <div 
-      ref={ref} 
-      className={`${width} transition-all duration-1000 ease-out`}
-      style={{ 
-        transitionDelay: `${delay}ms`,
-        opacity: isVisible ? 1 : 0,
-        transform: getTransform()
-      }}
-    >
-      {children}
+    <div className="min-h-screen bg-[#E5E1D8] text-stone-900 overflow-x-hidden">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        html { scroll-behavior: smooth; }
+      `}</style>
+
+      <div className="w-full min-h-screen bg-white shadow-2xl relative">
+        
+        {/* Navigation */}
+        <nav className="flex justify-between items-center px-6 lg:px-12 py-5 sticky top-0 z-[100] bg-white/90 backdrop-blur-md border-b border-stone-100">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo(0,0)}>
+            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg transform rotate-3 overflow-hidden border-2 border-white">
+              <img src="/logo1.png" alt="Logo" className="w-full h-full object-cover" />
+            </div>
+            <span className="text-xl font-extrabold tracking-tighter text-stone-800">Swahili Coastal Crunch</span>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-8">
+  {[
+    { name: 'Home', action: 'scroll' },
+    { name: 'Services', action: 'scroll' },
+    { name: 'Menu', action: 'link', href: '/menu' },
+    { name: 'About', action: 'link', href: '/about' },
+    { name: 'Contact', action: 'link', href: '/contact' }
+  ].map((item) => (
+    <div key={item.name} className={`text-[12px] font-bold transition-colors uppercase tracking-widest ${
+      view === item.name.toLowerCase() ? 'text-orange-500' : 'text-stone-400 hover:text-stone-900'
+    }`}>
+      {item.action === 'scroll' ? (
+        <button 
+          onClick={() => {
+            if(item.name === 'Home') window.scrollTo(0,0);
+            else scrollToSection(item.name.toLowerCase());
+          }}
+        >
+          {item.name}
+        </button>
+      ) : (
+        <a href={item.href}>
+          {item.name}
+        </a>
+      )}
+    </div>
+  ))}
+</div>
+
+
+          <div className="flex items-center gap-6">
+            <Search size={20} className="text-stone-400 cursor-pointer hover:text-orange-500 transition-colors" />
+            <div className="relative cursor-pointer group">
+              <ShoppingCart size={20} className="text-stone-400 group-hover:text-orange-500 transition-colors" />
+              <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">2</span>
+            </div>
+            <button className="lg:hidden" onClick={() => setIsMenuOpen(true)}>
+              <MenuIcon size={24} />
+            </button>
+          </div>
+        </nav>
+
+     {/* 🚀 IMPROVED HERO SECTION - CLEAN & ELEGANT */}
+<section id="home" className="relative min-h-screen flex flex-col justify-center px-6 lg:px-12 py-20">
+  <div className="absolute inset-0 z-0">
+  <img 
+    src="/samosa.jpg" 
+    className="w-full h-full object-cover" 
+    alt="Background"
+  />
+</div>
+
+
+  {/* Floating Delivery Badge */}
+  <motion.div 
+    initial={{ opacity: 0, y: -20 }} 
+    animate={{ opacity: 1, y: 0 }} 
+    transition={{ duration: 1, repeat: Infinity, repeatType: "reverse" }}
+    className="absolute top-24 lg:top-32 right-6 lg:right-12 bg-orange-500/95 backdrop-blur-md text-white px-6 py-4 rounded-3xl font-bold shadow-2xl z-20 border-4 border-white/50 flex items-center gap-2"
+  >
+    🚚 <span className="text-sm">Kansas Delivery</span> <span className="text-xs font-black">$30</span>
+  </motion.div>
+
+  <div className="relative z-10 w-full grid lg:grid-cols-2 gap-20 items-center">
+    {/* LEFT: Hero Content */}
+    <motion.div {...fadeInUp} className="text-center lg:text-left space-y-10 max-w-lg lg:max-w-none">
+      <div className="inline-flex items-center gap-4">
+        <span className="h-[3px] w-20 bg-gradient-to-r from-orange-500 to-orange-400" />
+        <span className="text-orange-600 font-serif italic text-xl font-bold uppercase tracking-wide bg-orange-50/50 px-4 py-2 rounded-full backdrop-blur-sm">
+          Authentic Coastal Delicacies
+        </span>
+      </div>
+      
+      <h1 className="text-6xl md:text-7xl lg:text-5xl xl:text-6lg font-serif font-black leading-[0.85] tracking-tight">
+        <span className="text-stone-900 drop-shadow-2xl text-white">Savor the</span>
+        <br className="hidden lg:block" />
+        <span className="block bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 bg-clip-text text-transparent drop-shadow-3xl">
+          Coastal Crunch
+        </span>
+      </h1>
+      
+      
+      
+      <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6 pt-6">
+        <motion.button 
+          whileHover={{ scale: 1.05, y: -2 }} 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => scrollToSection('menu')}
+          className="group bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-14 py-7 rounded-3xl font-bold text-lg shadow-2xl hover:shadow-orange-500/50 transition-all duration-500 flex items-center gap-4 backdrop-blur-md border-4 border-white/20"
+        >
+          Order Now 
+          <ArrowRight size={22} className="group-hover:translate-x-2 transition-all duration-300" />
+        </motion.button>
+        
+        <motion.button 
+          whileHover={{ scale: 1.05, y: -2 }} 
+          whileTap={{ scale: 0.98 }}
+          onClick={() => scrollToSection('menu')}
+          className="border-4 border-stone-200 hover:border-orange-400 hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 text-stone-800 hover:text-orange-700 px-12 py-7 rounded-3xl font-bold text-lg shadow-2xl hover:shadow-orange-200/50 transition-all duration-300 flex items-center gap-3 backdrop-blur-md"
+        >
+          View Full Menu
+        </motion.button>
+      </div>
+
+      {/* Trust Badges */}
+      <div className="flex flex-wrap gap-8 justify-center lg:justify-start pt-8 text-sm font-bold text-stone-600">
+        <div className="flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border">
+          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+          500+ Happy Customers
+        </div>
+        <div className="flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border">
+          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+          5⭐ Google Rating
+        </div>
+      </div>
+    </motion.div>
+
+    
+  </div>
+
+  {/* Scroll Indicator */}
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: [0, 10, 0] }}
+    transition={{ repeat: Infinity, duration: 2 }}
+    className="absolute bottom-16 left-1/2 transform -translate-x-1/2 text-center text-stone-500 z-20"
+  >
+    <div className="w-3 h-12 border-l-2 border-stone-400 mx-auto animate-bounce" />
+    <span className="text-xs uppercase tracking-[0.3em] font-bold mt-3 block">Scroll to Explore</span>
+  </motion.div>
+</section>
+
+
+        {/* Services Section - ALL SECTIONS NOW HAVE CTAs */}
+        <section id="services" className="px-6 lg:px-12 py-24 bg-stone-50/50 space-y-24">
+          
+          {/* Crunchy Half-Cakes */}
+          <div className="flex flex-col lg:flex-row items-center gap-16 max-w-7xl mx-auto">
+             <div className="w-full lg:w-1/2 flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+               <motion.div {...fadeInUp} className="relative z-10 rounded-[2.5rem] overflow-hidden aspect-square w-full max-w-[280px] border-[8px] border-white shadow-2xl group shrink-0 flex-shrink-0">
+                 <img src="/ngumu.jpg" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt="Crunchy Half-Cakes" />
+               </motion.div>
+               <div className="space-y-4 max-w-[180px] lg:text-left">
+                 <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.3em]">Our Specialty</p>
+                 <h4 className="font-serif font-bold text-stone-900 text-xl leading-tight">Crunchy Half-Cakes</h4>
+                 <p className="text-[10px] text-stone-500 font-bold uppercase tracking-wider leading-relaxed">Hand-crafted everyday. The ultimate balance of golden crunch and airy sweetness.</p>
+               </div>
+             </div>
+             <div className="w-full lg:w-1/2 space-y-6">
+               <span className="text-orange-500 font-serif italic text-2xl block">Featured Product</span>
+               <h2 className="text-3xl lg:text-5xl font-serif font-bold text-stone-900 leading-tight">Our Signature Crunch</h2>
+               <p className="text-stone-500 leading-relaxed text-lg font-medium">
+                 These golden half-cakes represent the pinnacle of coastal baking tradition. Perfectly balanced texture that melts in your mouth. KES 200.
+               </p>
+               <button className="bg-orange-500 hover:bg-stone-900 text-white px-10 py-4 rounded-full font-bold shadow-2xl hover:shadow-3xl transition-all w-full lg:w-auto">
+                 Order Half-Cakes
+               </button>
+             </div>
+          </div>
+
+          {/* Samosas Section */}
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-16 max-w-7xl mx-auto">
+            <div className="w-full lg:w-1/2 flex items-center gap-8 lg:gap-12 justify-end">
+               <div className="space-y-4 max-w-[180px] text-right">
+                 <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.3em]">Flavor Burst</p>
+                 <h4 className="font-serif font-bold text-stone-900 text-xl leading-tight">Crispy Samosas</h4>
+                 <p className="text-[10px] text-stone-500 font-bold uppercase tracking-wider leading-relaxed">Spiced to perfection with a thin, brittle crust that shatters with every bite.</p>
+               </div>
+               <motion.div {...fadeInUp} className="relative z-10 rounded-[2.5rem] overflow-hidden aspect-square w-full max-w-[280px] border-[8px] border-white shadow-2xl group shrink-0">
+                 <img src="sam.jpg" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt="Samosas" />
+               </motion.div>
+            </div>
+            <div className="w-full lg:w-1/2 space-y-6">
+              <span className="text-orange-500 font-serif italic text-2xl block">Spiced & Savory</span>
+              <h2 className="text-3xl lg:text-5xl font-serif font-bold text-stone-900 leading-tight">The Perfect Coastal Snack</h2>
+              <p className="text-stone-500 leading-relaxed text-lg font-medium">
+                Our samosas are renowned for their delicate folding and robust fillings, prepared with fresh herbs and hand-ground spices from the heart of the coast. KES 120.
+              </p>
+              <button className="bg-orange-500 hover:bg-stone-900 text-white px-10 py-4 rounded-full font-bold shadow-2xl hover:shadow-3xl transition-all w-full lg:w-auto">
+                Order Samosas
+              </button>
+            </div>
+          </div>
+
+          {/* Kaimati Section */}
+          <div className="flex flex-col lg:flex-row items-center gap-16 max-w-7xl mx-auto">
+            <div className="w-full lg:w-1/2 flex items-center gap-8 lg:gap-12">
+               <motion.div {...fadeInUp} className="relative z-10 rounded-[2.5rem] overflow-hidden aspect-square w-full max-w-[280px] border-[8px] border-white shadow-2xl group shrink-0">
+                 <img src="/kaimati.jpg" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt="Kaimati" />
+               </motion.div>
+               <div className="space-y-4 max-w-[180px]">
+                 <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.3em]">Sweet Glaze</p>
+                 <h4 className="font-serif font-bold text-stone-900 text-xl leading-tight">Honeyed Kaimati</h4>
+                 <p className="text-[10px] text-stone-500 font-bold uppercase tracking-wider leading-relaxed">Golden syrup-coated dumplings that are soft on the inside and crunchy on the outside.</p>
+               </div>
+            </div>
+            <div className="w-full lg:w-1/2 space-y-6">
+              <span className="text-orange-500 font-serif italic text-2xl block">A Sweet Tradition</span>
+              <h2 className="text-3xl lg:text-5xl font-serif font-bold text-stone-900 leading-tight">Glistening Golden Treasures</h2>
+              <p className="text-stone-500 leading-relaxed text-lg font-medium">
+                Fried to a deep amber and tossed in a fragrant sugar syrup. KES 100.
+              </p>
+              <button className="bg-orange-500 hover:bg-stone-900 text-white px-10 py-4 rounded-full font-bold shadow-2xl hover:shadow-3xl transition-all w-full lg:w-auto">
+                Order Kaimati
+              </button>
+            </div>
+          </div>
+
+          {/* Mahamri Section */}
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-16 max-w-7xl mx-auto">
+            <div className="w-full lg:w-1/2 flex items-center gap-8 lg:gap-12 justify-end">
+               <div className="space-y-4 max-w-[180px] text-right">
+                 <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.3em]">Breakfast Staple</p>
+                 <h4 className="font-serif font-bold text-stone-900 text-xl leading-tight">Puffy Mahamri</h4>
+                 <p className="text-[10px] text-stone-500 font-bold uppercase tracking-wider leading-relaxed">Cardamom-infused dough made with fresh coconut milk for a light, airy finish.</p>
+               </div>
+               <motion.div {...fadeInUp} className="relative z-10 rounded-[2.5rem] overflow-hidden aspect-square w-full max-w-[280px] border-[8px] border-white shadow-2xl group shrink-0">
+                 <img src="/mahamri.jpg" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt="Mahamri" />
+               </motion.div>
+            </div>
+            <div className="w-full lg:w-1/2 space-y-6">
+              <span className="text-orange-500 font-serif italic text-2xl block">Signature Softness</span>
+              <h2 className="text-3xl lg:text-5xl font-serif font-bold text-stone-900 leading-tight">The Soul of the Coast</h2>
+              <p className="text-stone-500 leading-relaxed text-lg font-medium">
+                No coastal meal is complete without our Mahamri. Iconic hollow centers and aromatic cardamom scent. KES 80.
+              </p>
+              <button className="bg-orange-500 hover:bg-stone-900 text-white px-10 py-4 rounded-full font-bold shadow-2xl hover:shadow-3xl transition-all w-full lg:w-auto">
+                Order Mahamri
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Our Expertise */}
+        <section className="px-6 lg:px-12 py-20 bg-stone-50/50">
+          <div className="max-w-4xl mx-auto text-center space-y-6">
+            <motion.div {...fadeInUp}>
+              <span className="text-orange-500 font-serif italic text-2xl block">Our Expertise</span>
+              <h2 className="text-3xl lg:text-5xl font-serif font-bold text-stone-900 leading-tight">Authentic Taste Delivered Fresh</h2>
+              <p className="text-stone-500 leading-relaxed text-lg font-medium max-w-2xl mx-auto">
+                We bring the vibrant culinary culture of the Swahili coast to your doorstep. Our kitchen operates on tradition, using recipes passed down through generations.
+              </p>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ENHANCED INTERACTIVE GALLERY */}
+        <section id="menu" className="px-6 lg:px-12 py-20">
+          <div className="flex justify-between items-end mb-12 border-b border-stone-100 pb-8">
+            <h2 className="text-5xl font-serif font-bold text-stone-900">Food Gallery</h2>
+          </div>
+          <div id="foods" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {[
+              { img: "samosa1.jpg", title: "Crispy Samosas", price: "KES 120" },
+              { img: "naan.jpg", title: "Fresh Chapati", price: "KES 50" },
+              { img: "aro.jpg", title: "Aromatic Mahamri", price: "KES 80" },
+              { img: "", title: "Honey Kaimati", price: "KES 100" },
+               
+              
+            ].map((item, idx) => (
+              <motion.div 
+                key={idx} 
+                whileHover={{ y: -10 }} 
+                className="group cursor-pointer relative overflow-hidden rounded-3xl shadow-2xl border-4 border-white"
+              >
+                <div className="aspect-[4/5] relative">
+                  <img 
+                    src={item.img} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                    alt={item.title} 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-between p-8">
+                    <div>
+                      <p className="text-white font-serif font-bold text-2xl drop-shadow-lg">{item.title}</p>
+                      <p className="text-orange-400 text-xl font-bold mt-2 drop-shadow-lg">{item.price}</p>
+                    </div>
+                    <button className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-full font-bold shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 w-full text-center transform hover:scale-105">
+                      Quick Add
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer id="contact" className="bg-[#1A3C34] text-[#E8DCC4] pt-24 pb-12 px-6 lg:px-12">
+          <div className="grid lg:grid-cols-12 gap-16 pb-16 border-b border-white/10">
+            <div className="lg:col-span-5 space-y-8">
+              <h2 className="text-3xl font-serif font-bold">Swahili Coastal Crunch</h2>
+              <div className="flex gap-6">
+                {[Instagram, Facebook, Twitter].map((Icon, i) => (
+                  <Icon key={i} size={24} className="hover:text-orange-500 cursor-pointer transition-all" />
+                ))}
+              </div>
+            </div>
+            <div className="lg:col-span-7 grid grid-cols-2 md:grid-cols-3 gap-12 text-xs font-bold uppercase tracking-widest text-stone-400">
+              <div className="space-y-4">
+                <p className="text-orange-500">Quick Links</p>
+                <p className="hover:text-white cursor-pointer" onClick={() => window.scrollTo(0,0)}>Home</p>
+                <p className="hover:text-white cursor-pointer" onClick={() => scrollToSection('services')}>Services</p>
+              </div>
+              <div className="space-y-4">
+                <p className="text-orange-500">Connect</p>
+                <p className="lowercase flex items-center gap-2"><Mail size={14}/> hello@coastalcrunch.com</p>
+                <p className="flex items-center gap-2"><Phone size={14}/> +254 700 123 456</p>
+              </div>
+            </div>
+          </div>
+          <div className="pt-10 text-[10px] text-stone-500 font-bold uppercase tracking-[0.4em] text-center">
+            © 2026 SWAHILI COASTAL CRUNCH. ALL RIGHTS RESERVED. • Nairobi Delivery
+          </div>
+        </footer>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-white z-[200] flex flex-col items-center justify-center gap-10">
+              <button className="absolute top-10 right-10" onClick={() => setIsMenuOpen(false)}><X size={40} /></button>
+              {['Home', 'Services', 'Menu', 'Foods', 'Contact'].map((item) => (
+                <button key={item} onClick={() => { item === 'Home' ? window.scrollTo(0,0) : scrollToSection(item.toLowerCase()); setIsMenuOpen(false); }} className="text-4xl font-serif font-bold">{item}</button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
 
-
-export default function App() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-[#FCFAF7] text-[#1A1A1A] font-sans antialiased">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@200;300;400;600;800&display=swap');
-        
-        body { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; scroll-behavior: smooth; }
-        .font-serif { font-family: 'Playfair Display', serif; }
-        
-        @keyframes subtle-zoom {
-          from { transform: scale(1); }
-          to { transform: scale(1.1); }
-        }
-        .animate-zoom { animation: subtle-zoom 25s infinite alternate ease-in-out; }
-
-        .hero-bg-texture {
-          background-color: #F2E9E1;
-          background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
-        }
-
-        .spice-pattern {
-          opacity: 0.04;
-          background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z' fill='%23E87E44' /%3E%3C/svg%3E%0A");
-          background-size: 200px 200px;
-        }
-
-        .vertical-text {
-          writing-mode: vertical-rl;
-        }
-
-        .writing-v {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-        }
-      `}</style>
-
-      {/* HEADER */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${scrolled ? 'bg-white/95 backdrop-blur-xl border-b border-stone-200 shadow-sm py-2' : 'bg-transparent py-6'}`}>
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          
-          {/* BRAND TO THE LEFT */}
-          <div className="flex flex-col items-start">
-            <a href="/" className="group flex items-center gap-3 no-underline transition-all duration-500 hover:opacity-80">
-              <div className="relative w-8 h-8 md:w-10 md:h-10 bg-[#E87E44] rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-500 group-hover:rotate-12 overflow-hidden -mt-1">
-                {LOGO_URL ? (
-                  <img src={LOGO_URL} alt="Logo" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="font-serif font-bold text-lg md:text-xl">S</span>
-                )}
-              </div>
-              <div className="flex flex-col -space-y-1 text-left">
-                <span className="text-xl md:text-2xl font-black font-serif text-[#1A1A1A]">Swahili</span>
-                <span className="text-[8px] uppercase tracking-[0.4em] font-bold text-[#E87E44]">Coastal Crunch</span>
-              </div>
-            </a>
-          </div>
-
-          {/* NAV TO THE RIGHT */}
-          <nav className="flex gap-1 md:gap-4">
-            {[
-              { label: 'Home', path: '/' },
-              { label: 'Menu', path: '/menu' },
-              { label: 'About', path: '/about' },
-              { label: 'Contact', path: '/contact' }
-            ].map((item) => (
-              <a 
-                key={item.label} 
-                href={item.path} 
-                className="px-2 md:px-4 py-2 text-[10px] font-extrabold rounded-full transition-all tracking-[0.2em] uppercase text-[#1A1A1A] hover:bg-black/5"
-              >
-                {item.label}
-              </a>
-            ))}
-          </nav>
-        </div>
-      </header>
-
-      {/* HERO SECTION */}
-      <section className="relative h-screen flex flex-col md:flex-row items-stretch overflow-hidden bg-[#E5DACE]">
-        
-        {/* LEFT PANEL: PRIMARY IMAGE - COMPLETELY CLEAR */}
-        <div className="relative flex-[1.2] overflow-hidden order-2 md:order-1 border-r border-stone-200/30">
-          <img 
-            src={HERO_IMAGE_PRIMARY} 
-            className="w-full h-full object-cover animate-zoom" 
-            alt="Authentic Coastal Food"
-          />
-          
-          {/* TEXT ON THE LEFT PANEL BLANK SPACE */}
-          <div className="absolute left-8 top-1/2 -translate-y-1/2 hidden lg:flex items-center gap-6">
-            <div className="w-px h-32 bg-black"></div>
-            <p className="writing-v text-[9px] font-black uppercase tracking-[0.8em] text-white drop-shadow-lg">
-                Tradition • Heritage • Spice
-            </p>
-          </div>
-        </div>
-        
-        {/* RIGHT PANEL: TEXT CONTENT & INTEGRATED IMAGE */}
-        <div className="relative flex-1 flex flex-col justify-center px-8 md:px-12 lg:px-16 hero-bg-texture z-10 order-1 md:order-2">
-          <div className="absolute inset-0 spice-pattern pointer-events-none opacity-[0.06]"></div>
-          
-          <div className="relative flex flex-col pt-16 md:pt-0">
-            <div className="animate-in fade-in slide-in-from-right-12 duration-1000 fill-mode-both">
-              
-              {/* BRAND TAGS */}
-              <div className="flex items-center gap-6 mb-8 overflow-hidden">
-                 <div className="flex flex-col">
-                    <span className="text-[15px] font-black uppercase tracking-[0.5em] text-[#E87E44]">Est. 2025</span>
-                    <span className="w-12 h-[2px] bg-[#E87E44] mt-1 transform origin-left animate-in slide-in-from-left duration-1000 delay-300"></span>
-                 </div>
-                 <span className="text-[15px] font-black uppercase tracking-[0.5em] text-stone-500">Swahili & Aesthetical</span>
-              </div>
-
-              {/* SECONDARY IMAGE */}
-              <div className="relative w-full max-w-md aspect-[16/10] rounded-2xl overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500 mb-10 border-4 border-white/50 group">
-                 <img 
-                    src={HERO_IMAGE_SECONDARY} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                    alt="Signature Platter"
-                 />
-                 <div className="absolute inset-0 bg-black/10"></div>
-                 <div className="absolute bottom-4 left-4">
-                    <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white px-3 py-1 bg-[#E87E44] rounded-full">New Arrivals</span>
-                 </div>
-              </div>
-              
-              <div className="relative max-w-sm mb-10 pl-6 border-l-2 border-stone-300 animate-in fade-in duration-1000 delay-700">
-                <p className="text-stone-600 text-lg font-light leading-relaxed">
-                  Hand-folded <span className="font-semibold text-[#1A1A1A]">samosas</span> and golden kaimati, spiced with the ancestral soul of the Swahili coast.
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-900">
-                <a href="/menu" className="group relative flex items-center gap-6 bg-[#1A1A1A] text-white pl-10 pr-3 py-3 rounded-full hover:bg-[#E87E44] transition-all duration-500 shadow-xl shadow-black/10 active:scale-95">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Explore Menu</span>
-                  <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                    <ArrowRight size={18} />
-                  </div>
-                </a>
-              </div>
-            </div>
-          </div>
-          
-          <div className="absolute bottom-12 right-12 hidden xl:flex items-center gap-4 opacity-30 animate-bounce">
-            <div className="text-[9px] font-bold tracking-[0.5em] vertical-text transform rotate-180 text-[#1A1A1A]">SCROLL</div>
-            <div className="h-16 w-px bg-stone-400"></div>
-          </div>
-        </div>
-      </section>
-
-      {/* THE CRAFT SECTION */}
-      <section className="py-32 bg-white px-8" id="spices-section">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
-          <Reveal direction="right">
-            <div className="relative group max-w-sm mx-auto md:ml-0">
-              <div className="aspect-[3/4] overflow-hidden rounded-2xl shadow-2xl">
-                <img src="/spices.jpg" className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110" alt="Spice Selection" />
-              </div>
-              <div className="absolute -bottom-6 -right-6 bg-[#E8DCC4] p-6 rounded-xl shadow-xl max-w-[180px]">
-                <Leaf className="text-[#1A3C34] mb-2 animate-pulse" size={18} />
-                <p className="text-[8px] uppercase font-black tracking-widest text-[#1A3C34]">Origins</p>
-                <p className="text-[10px] italic font-serif text-stone-600 mt-1 leading-tight">Sourced directly from the spice markets of Zanzibar.</p>
-              </div>
-            </div>
-          </Reveal>
-
-          <div className="space-y-8">
-            <Reveal delay={200}>
-              <div className="space-y-4">
-                <span className="text-[#E87E44] text-[12px] font-black uppercase tracking-[0.5em]">The Philosophy</span>
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif italic !text-black leading-tight">The Craft: A dialogue of spice and flame.</h2>
-              </div>
-            </Reveal>
-            <Reveal delay={400}>
-              <p className="text-stone-1000 text-base md:text-lg leading-relaxed font-light">
-                We celebrate the artisanal traditions of the coast. Every item on our menu is a testament to patience—from the 24-hour dough rest to the hand-toasting of whole aromatics.
-              </p>
-            </Reveal>
-            <Reveal delay={600}>
-              <a href="/about" className="inline-flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.3em] text-[#1A1A1A] border-b-2 border-[#E87E44] pb-2 hover:text-[#E87E44] transition-all group">
-                Learn about our methods <ExternalLink size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              </a>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* HERITAGE GALLERY */}
-      <section className="py-32 bg-[#F9F8F6] px-8 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <Reveal>
-            <div className="text-center mb-20 space-y-4">
-              <span className=" text-4xl text-[#E87E44] text-[9px] font-black uppercase tracking-[0.7em]">Visual Journey</span>
-              <h2 className="text-4xl md:text-5xl font-serif italic !text-black">The Coastal Table</h2>
-            </div>
-          </Reveal>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {GALLERY_IMAGES.map((img, idx) => (
-              <Reveal key={idx} delay={idx * 150} direction={idx % 2 === 0 ? 'up' : 'down'}>
-                <div className={`relative group aspect-[1/1] overflow-hidden rounded-xl bg-stone-200 shadow-md ${idx % 2 !== 0 ? 'lg:translate-y-8' : ''} transition-all duration-700`}>
-                  <img src={img.url} className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 group-hover:rotate-2" alt={img.title} />
-                  <div className="absolute inset-0 bg-[#1A3C34]/80 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center p-4 text-center backdrop-blur-[2px]">
-                     <p className="text-white text-[9px] font-black uppercase tracking-widest border-b border-[#E87E44] pb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">{img.title}</p>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="bg-[#1A3C34] text-[#E8DCC4] pt-24 pb-12 px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-12 gap-16 pb-20 border-b border-white/10">
-            <div className="lg:col-span-5 space-y-10">
-              <Reveal direction="right">
-                <div className="space-y-6">
-                  <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 bg-[#E87E44] rounded-xl flex items-center justify-center overflow-hidden shadow-2xl transform -rotate-3 border-2 border-[#E8DCC4]/20 group hover:rotate-0 transition-transform duration-500 -mt-2">
-                      {LOGO_URL ? (
-                        <img src={LOGO_URL} alt="Brand Logo" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-white font-serif font-bold text-2xl">S</span>
-                      )}
-                    </div>
-                    <h2 className="text-2xl font-serif italic leading-tight">
-                      Taste the <br />
-                      <span className="text-[#E87E44] not-italic font-bold tracking-tight">Ocean's Spirit</span>
-                    </h2>
-                  </div>
-                  <p className="text-stone-400 text-xs leading-relaxed max-w-sm font-light tracking-wide uppercase opacity-70">
-                    From the spice markets of Zanzibar to the shores of Mombasa, we bring you the authentic textures of Swahili coastal cuisine.
-                  </p>
-                </div>
-              </Reveal>
-            </div>
-
-            <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-12">
-              <Reveal delay={200}>
-                <div className="space-y-6">
-                  <h5 className="text-[10px] font-black uppercase tracking-[0.5em] text-[#E87E44]">Quick Links</h5>
-                  <ul className="space-y-3 text-[10px] font-medium text-stone-400 uppercase tracking-widest">
-                    <li className="hover:text-white cursor-pointer transition-colors"><a href="/menu">The Menu</a></li>
-                    <li className="hover:text-white cursor-pointer transition-colors">Gift Cards</li>
-                    <li className="hover:text-white cursor-pointer transition-colors"><a href="/about">Our Story</a></li>
-                  </ul>
-                </div>
-              </Reveal>
-              <Reveal delay={400}>
-                <div className="space-y-6">
-                  <h5 className="text-[10px] font-black uppercase tracking-[0.5em] text-[#E87E44]">Contact Us</h5>
-                  <ul className="space-y-3 text-[10px] font-medium text-stone-400 uppercase tracking-widest">
-                    <li className="flex items-center gap-2 hover:text-white transition-colors group cursor-pointer lowercase">
-                      <Mail size={12} /> <a href="mailto:hello@swahili.com">lenvixochieng@gmail.com</a>
-                    </li>
-                    <li className="flex items-center gap-2 hover:text-white transition-colors group cursor-pointer lowercase">
-                      <Phone size={12} /> <a href="tel:+1234567890">+1 8167451565</a>
-                    </li>
-                    <li className="flex items-center gap-2 hover:text-white transition-colors group cursor-pointer capitalize">
-                      <MapPin size={12} /> <a href="/contact">Kansas, City</a>
-                    </li>
-                  </ul>
-                </div>
-              </Reveal>
-            </div>
-          </div>
-
-          <div className="pt-10 flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] text-stone-500 font-bold uppercase tracking-[0.5em]">
-            <p>© 2026 SWAHILI COASTAL CRUNCH. ALL RIGHTS RESERVED.</p>
-            <div className="flex gap-8">
-               <span className="hover:text-[#E87E44] cursor-pointer transition-colors">Privacy Policy</span>
-               <span className="hover:text-[#E87E44] cursor-pointer transition-colors">Terms of Service</span>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
-  ); 
-}
+export default App;
