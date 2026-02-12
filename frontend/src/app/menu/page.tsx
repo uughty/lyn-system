@@ -4,6 +4,7 @@ import { initializeApp, FirebaseOptions } from 'firebase/app';  // Add FirebaseO
 
 import { DocumentSnapshot } from 'firebase/firestore';
 import { getAnalytics, isSupported } from "firebase/analytics";
+import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 
 
 
@@ -41,6 +42,8 @@ interface OrderData {
   status: 'received' | 'preparing' | 'in-transit' | 'delivered';
   // add other order fields you use
 }
+
+
 
 interface Product {
   id: number;
@@ -95,6 +98,8 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID!
 } as FirebaseOptions;
+
+
 
 
 
@@ -227,7 +232,9 @@ const BrandLogo = ({ isLight = false }) => (
 
 
 export default function App() {
+  
   const [user, setUser] = useState<FirebaseUser | null>(null);  // ✅ FirebaseUser is the type
+  const [paymentDone, setPaymentDone] = useState(false);
 
   const [view, setView] = useState('home');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -239,9 +246,7 @@ export default function App() {
   const [quantity, setQuantity] = useState(1);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
- 
-  
-  
+
   // Forms
   const [deliveryInfo, setDeliveryInfo] = useState({ name: '', phone: '', address: '' });
   const [paymentMethod, setPaymentMethod] = useState('card');
@@ -259,133 +264,151 @@ export default function App() {
   const [riderPos, setRiderPos] = useState(originPos);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  
-useEffect(() => {
-  if (!user || !activeOrderId) return;
-
-  const orderRef = doc(db, 'artifacts', appId, 'users', user.uid, 'orders', activeOrderId);
-  const unsubscribe = onSnapshot(orderRef, (snapshot: DocumentSnapshot) => {  // Type snapshot
-
-    
-    const data = snapshot.data();
-    if (!data?.status) return;
-    
-    const statusMap: Record<string, number> = { 'received': 0, 'preparing': 1, 'in-transit': 2, 'delivered': 3 };
-    setTrackStep(statusMap[data.status as keyof typeof statusMap] ?? 0);
+const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
   });
-
-  return () => unsubscribe();  // Cleanup only - no JSX here
-}, [user, activeOrderId]);
-    
-
   // Tracking Simulation Logic
   useEffect(() => {
-    let timer: NodeJS.Timeout | undefined, mover: NodeJS.Timeout | undefined;  // ✅ typed
+    if (!activeOrderId) return; // only start when an order exists
 
-    if (view === 'tracking') {
-      timer = setInterval(() => {
-        setTimeLeft(prev => {
-            const next = prev > 0 ? prev - 1 : 0;
-            return next;
-        });
-      }, 1000);
+    setTrackStep(0);
+    setRiderPos(originPos);
+    setTimeLeft(240);
 
-      mover = setInterval(() => {
-        if (trackStep === 2) {
-            setRiderPos(prev => ({
-                lat: prev.lat + (customerPos.lat - prev.lat) * 0.005,
-                lng: prev.lng + (customerPos.lng - prev.lng) * 0.005
-            }));
-        } else if (trackStep < 2) {
-            setRiderPos(originPos);
-        } else {
-            setRiderPos(customerPos);
-        }
-      }, 100);
-    }
-    return () => { clearInterval(timer); clearInterval(mover); };
-  }, [view, trackStep]);
-  
-const handleAddToCart = () => {
-  if (!selectedProduct) return;
-  const dipsTotal = selectedDips.reduce((acc, d) => acc + (d.price ?? 0), 0);
-  const newItem: CartItem = {
-    cartId: Math.random().toString(36).slice(2, 11),
-    ...selectedProduct,  // Now typed as object
-    finalPrice: (selectedProduct.basePrice * (selectedQuality?.multiplier ?? 1)) + dipsTotal,
-    quantity,
-    quality: selectedQuality?.label ?? 'Standard',
-    spice: selectedSpice,
-    dips: selectedDips
-  };
-  setCart(prev => [...prev, newItem]);  // Types match
-  // Reset...
-  setQuantity(1);
-  setSelectedQuality(QUALITIES[0]);
-  setSelectedSpice('Mild');
-  setSelectedDips([]);
-};
-
-
- const removeFromCart = (id: string) => {
-    setCart(prev => prev.filter(item => item.cartId !== id));
-};
-
-  const cartTotal = useMemo(() => cart.reduce((acc, item) => acc + (item.finalPrice * item.quantity), 0), [cart]);
-
-  const isFormComplete = useMemo(() => {
-    const basic = deliveryInfo.name.length > 1 && deliveryInfo.phone.length > 5 && deliveryInfo.address.length > 5;
-    if (!basic) return false;
-    
-    if (paymentMethod === 'card') {
-      return cardDetails.number.replace(/\s/g, '').length >= 12 && cardDetails.expiry.length >= 4 && cardDetails.cvc.length >= 3;
-    }
-    if (paymentMethod === 'cash_app') return cashAppTag.length > 2;
-    if (paymentMethod === 'zelle') return zellePhone.length > 5;
-    if (paymentMethod === 'paypal') return paypalEmail.includes('@');
-    if (paymentMethod === 'cash') return true;
-    return false;
-  }, [deliveryInfo, paymentMethod, cardDetails, cashAppTag, zellePhone, paypalEmail]);
-
-  // --- ACTUAL PAYMENT HANDLER ---
-  const handlePayment = async () => {
-    if (!user || !isFormComplete || isProcessing) return;
-    
-    setIsProcessing(true);
-    try {
-      const ordersRef = collection(db, 'artifacts', appId, 'users', user.uid, 'orders');
-      const orderDoc = await addDoc(ordersRef, {
-        items: cart,
-        total: cartTotal + 3.50,
-        delivery: deliveryInfo,
-        payment: { method: paymentMethod, status: 'completed' },
-        status: 'received',
-        createdAt: serverTimestamp()
+    const interval = setInterval(() => {
+      setTrackStep(prev => {
+        if (prev < 3) return prev + 1;
+        clearInterval(interval);
+        return prev;
       });
 
-      setActiveOrderId(orderDoc.id);
-      setCart([]);
-      setView('tracking');
+      setRiderPos(prev => {
+        const step = 0.0005;
+        const latDiff = customerPos.lat - prev.lat;
+        const lngDiff = customerPos.lng - prev.lng;
 
-      // Automate status transitions for demo/real-time flow
-      setTimeout(() => updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'orders', orderDoc.id), { status: 'preparing' }), 5000);
-      setTimeout(() => updateDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'orders', orderDoc.id), { status: 'in-transit' }), 12000);
-    } catch (err) {
-      console.error("Order failed:", err);
-    } finally {
-      setIsProcessing(false);
-    }
+        if (Math.abs(latDiff) < 0.0001 && Math.abs(lngDiff) < 0.0001) return customerPos;
+
+        return {
+          lat: prev.lat + latDiff * step * 10,
+          lng: prev.lng + lngDiff * step * 10
+        };
+      });
+
+      setTimeLeft(prev => (prev > 0 ? prev - 5 : 0));
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [activeOrderId]);
+
+  const handleAddToCart = () => {
+    if (!selectedProduct) return;
+    const dipsTotal = selectedDips.reduce((acc, d) => acc + (d.price ?? 0), 0);
+    const newItem: CartItem = {
+      cartId: Math.random().toString(36).slice(2, 11),
+      ...selectedProduct,
+      finalPrice: (selectedProduct.basePrice * (selectedQuality?.multiplier ?? 1)) + dipsTotal,
+      quantity,
+      quality: selectedQuality?.label ?? 'Standard',
+      spice: selectedSpice,
+      dips: selectedDips
+    };
+    setCart(prev => [...prev, newItem]);
+    setQuantity(1);
+    setSelectedQuality(QUALITIES[0]);
+    setSelectedSpice('Mild');
+    setSelectedDips([]);
   };
 
- const toggleDip = (dip: Dip) => {
+  const removeFromCart = (id: string) => {
+    setCart(prev => prev.filter(item => item.cartId !== id));
+  };
 
+  const cartTotal = useMemo(
+    () => cart.reduce((acc, item) => acc + item.finalPrice * item.quantity, 0),
+    [cart]
+  );
+
+  const isFormComplete = useMemo(() => {
+    const basic =
+      deliveryInfo.name.trim().length > 1 &&
+      deliveryInfo.phone.trim().length > 5 &&
+      deliveryInfo.address.trim().length > 5;
+    if (!basic) return false;
+
+    const method = paymentMethod?.toLowerCase().trim();
+    switch (method) {
+      case 'card':
+        return (
+          cardDetails.number.replace(/\s/g, '').length >= 12 &&
+          cardDetails.expiry.trim().length >= 4 &&
+          cardDetails.cvc.trim().length >= 3
+        );
+      case 'cash_app':
+        return cashAppTag.trim().length > 2;
+      case 'zelle':
+        return zellePhone.trim().length > 5;
+      case 'paypal':
+        return paypalEmail.includes('@');
+      case 'cash':
+        return true;
+      default:
+        return false;
+    }
+  }, [deliveryInfo, paymentMethod, cardDetails, cashAppTag, zellePhone, paypalEmail]);
+
+  const canPay = isFormComplete && cart.length > 0 && !isProcessing;
+  console.log({ isFormComplete, cartLength: cart.length, isProcessing, canPay });
+
+  const handlePayment = async () => {
+  if (!canPay) return;
+
+  setIsProcessing(true);
+
+  // Generate order ID for tracking
+  const fakeOrderId = 'order_' + Date.now();
+  setActiveOrderId(fakeOrderId);
+
+  // Cash payments skip "real" processing
+  if (paymentMethod === 'cash') {
+    setView('tracking');   // show map immediately
+    setPaymentDone(true);
+    setTimeout(() => setPaymentDone(false), 2000);
+    setIsProcessing(false);
+    setCart([]);           // clear cart after confirming
+    return;
+  }
+
+  // For real payments (card, PayPal, etc.)
+  try {
+    // Integrate payment gateway here, e.g., Stripe/PayPal SDK
+    // const result = await processPayment(cardDetails, cartTotal);
+
+    // For demo, simulate payment delay
+    await new Promise(res => setTimeout(res, 2000));
+
+    // Payment successful → show tracking map
+    setPaymentDone(true);
+    setView('tracking');
+    setTimeout(() => setPaymentDone(false), 2000);
+    setCart([]);  // clear cart after payment
+  } catch (err) {
+    console.error("Payment failed:", err);
+    alert("Payment failed. Please try again.");
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
+
+  const toggleDip = (dip: Dip) => {
     if (selectedDips.find(d => d.name === dip.name)) {
       setSelectedDips(prev => prev.filter(d => d.name !== dip.name));
     } else {
       setSelectedDips(prev => [...prev, dip]);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] text-[#1a1a1a] font-sans antialiased overflow-x-hidden">
@@ -853,15 +876,26 @@ const handleAddToCart = () => {
                      <div className="h-px bg-stone-50 w-full my-4"></div>
                      <div className="flex justify-between text-3xl font-serif pt-2 text-[#B99470]"><span>Total</span><span>£{(cartTotal + 3.5).toFixed(2)}</span></div>
                   </div>
+
                   
-                  <button 
-                     disabled={!isFormComplete || cart.length === 0 || isProcessing}
-                     onClick={handlePayment} 
-                     className={`w-full py-6 rounded-[1.8rem] font-black uppercase text-[11px] tracking-[0.2em] transition-all relative overflow-hidden group ${isFormComplete && cart.length > 0 && !isProcessing ? 'bg-black text-white hover:scale-[1.03] active:scale-[0.98]' : 'bg-stone-100 text-stone-300 cursor-not-allowed'}`}
-                  >
-                     {isFormComplete && cart.length > 0 && <div className="absolute inset-0 shimmer opacity-10"></div>}
-                     {isProcessing ? 'Processing...' : 'Confirm & Pay'}
-                  </button>
+               <button
+  disabled={!isFormComplete || cart.length === 0 || isProcessing}
+  onClick={handlePayment}
+  className={`w-full py-6 rounded-[1.8rem] font-black uppercase text-[11px] tracking-[0.2em] transition-all relative overflow-hidden group ${
+    isFormComplete && cart.length > 0 && !isProcessing
+      ? 'bg-black text-white hover:scale-[1.03] active:scale-[0.98]'
+      : 'bg-stone-100 text-stone-300 cursor-not-allowed'
+  }`}
+>
+  {isProcessing ? 'Processing...' : 'Confirm & Pay'}
+</button>
+
+{paymentDone && (
+  <p className="mt-4 text-green-600 font-black text-center">
+    Payment successful! 🎉
+  </p>
+)}
+
                   
                   <div className="mt-8 p-6 bg-stone-50 rounded-[2rem] flex items-center gap-4">
                         <ShieldCheck className="text-[#B99470]" size={20} />
@@ -874,126 +908,150 @@ const handleAddToCart = () => {
             </div>
           </div>
         )}
-
-        {/* --- TRACKER VIEW --- */}
-        {view === 'tracking' && (
-          <div className="pt-28 bg-[#FDFDFD] min-h-screen">
-            <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-4 space-y-6 pb-20 text-left">
-                    <div className="bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm">
-                        <div className="flex items-center gap-3 text-[#B99470] mb-6">
-                            <div className="w-10 h-10 rounded-full bg-[#B99470]/10 flex items-center justify-center">
-                                <Navigation size={20} className="animate-pulse" />
-                            </div>
-                            <div>
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400">Order #{activeOrderId?.slice(0, 5) || '8192'}</h3>
-                                <p className="text-lg font-serif italic text-black">Arrival in {formatTime(timeLeft)}</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-8">
-                            {[
-                                { icon: Package, label: "Order Received", desc: "Chef starting preparation" },
-                                { icon: Flame, label: "In the Oven", desc: "Golden crust forming" },
-                                { icon: Bike, label: "Out for Delivery", desc: "Heading your way" },
-                                { icon: CheckCircle2, label: "Delivered", desc: "Enjoy your snacks!" }
-                            ].map((step, idx) => (
-                                <div key={idx} className={`flex items-start gap-4 transition-all duration-700 ${idx <= trackStep ? 'opacity-100' : 'opacity-20'}`}>
-                                    <div className="relative">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${idx <= trackStep ? 'bg-[#B99470] text-white shadow-lg' : 'bg-stone-100 text-stone-400'}`}>
-                                            <step.icon size={14} />
-                                        </div>
-                                        {idx < 3 && <div className={`absolute top-8 left-1/2 -translate-x-1/2 w-px h-8 ${idx < trackStep ? 'bg-[#B99470]' : 'bg-stone-100'}`} />}
-                                    </div>
-                                    <div className="pt-1">
-                                        <p className="text-[11px] font-black uppercase tracking-tight text-black">{step.label}</p>
-                                        <p className="text-[10px] text-stone-400">{step.desc}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="bg-[#1a1a1a] p-8 rounded-[2.5rem] text-white space-y-4 shadow-xl">
-                        <div className="flex items-center gap-4">
-                            <img src={orderRider.image} className="w-12 h-12 rounded-full object-cover border-2 border-[#B99470]" alt="Rider" />
-                            <div>
-                                <p className="text-[10px] font-black uppercase text-[#B99470]">Your Coastal Rider</p>
-                                <p className="text-sm font-serif">{orderRider.name}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/40">
-                                <Bike size={12} /> {orderRider.bikeNumber}
-                            </div>
-                            <button className="text-[10px] font-black uppercase text-[#B99470] flex items-center gap-2 hover:text-white transition-colors">
-                                <MessageSquare size={14} /> Call Salim
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="lg:col-span-8 h-[600px] lg:mb-20">
-                    <div className="w-full h-full gmap-bg rounded-[3rem] relative overflow-hidden border-[1px] border-stone-200 shadow-xl group">
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 800 600">
-                          <rect x="0" y="450" width="300" height="150" className="gmap-park" />
-                          <rect x="550" y="50" width="250" height="200" className="gmap-park" />
-                          <path d="M 0 50 Q 150 100 200 0 L 0 0 Z" className="gmap-water" />
-                          <path d="M 0 300 L 800 300" className="gmap-artery" />
-                          <path d="M 0 300 L 800 300" className="gmap-artery-inner" />
-                          <path d="M 400 0 L 400 600" className="gmap-artery" />
-                          <path d="M 400 0 L 400 600" className="gmap-artery-inner" />
-                          <path d="M 100 0 L 100 600" className="gmap-road-outer" />
-                          <path d="M 100 0 L 100 600" className="gmap-road-inner" />
-                          <path d="M 700 0 L 700 600" className="gmap-road-outer" />
-                          <path d="M 700 0 L 700 600" className="gmap-road-inner" />
-                          <path d="M 0 100 L 800 100" className="gmap-road-outer" />
-                          <path d="M 0 100 L 800 100" className="gmap-road-inner" />
-                          <path d="M 0 500 L 800 500" className="gmap-road-outer" />
-                          <path d="M 0 500 L 800 500" className="gmap-road-inner" />
-                        </svg>
-
-                        {/* Customer */}
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-                            <div className="relative">
-                                <div className="absolute -inset-4 bg-blue-500/30 rounded-full animate-ping"></div>
-                                <div className="w-6 h-6 bg-blue-500 rounded-full border-[3px] border-white shadow-xl flex items-center justify-center text-white">
-                                    <HomeIcon size={12} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Rider */}
-                        <div 
-                            className="absolute z-30 transition-all duration-[150ms] ease-linear"
-                            style={{ 
-                                left: `${50 + (riderPos.lng - customerPos.lng) * 4500}%`,
-                                top: `${50 - (riderPos.lat - customerPos.lat) * 4500}%`
-                            }}
-                        >
-                            <div className="relative group">
-                                <div className="absolute -inset-6 bg-[#B99470]/20 rounded-full blur-xl animate-pulse"></div>
-                                <div className="flex flex-col items-center">
-                                    <div className="w-10 h-10 bg-[#1a1a1a] rounded-full border-2 border-[#B99470] flex items-center justify-center text-[#B99470] shadow-2xl overflow-hidden">
-                                        <img src={orderRider.image} className="w-full h-full object-cover" alt="Rider" />
-                                    </div>
-                                    <div className="mt-1 bg-white border border-[#B99470] px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md">
-                                        <Bike size={8} className="text-[#B99470]" />
-                                        <span className="text-[6px] font-black uppercase text-black">{trackStep === 2 ? 'In Transit' : 'Preparing'}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="absolute top-4 right-4 flex flex-col gap-2">
-                             <button className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-stone-500 hover:text-black transition-colors border border-stone-100"><Layers size={18} /></button>
-                             <button className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-[#B99470] hover:text-[#B99470] transition-colors border border-stone-100"><LocateFixed size={18} /></button>
-                        </div>
-                    </div>
-                </div>
+{/* --- TRACKER VIEW --- */}
+{view === 'tracking' && (
+  <div className="pt-28 bg-[#FDFDFD] min-h-screen">
+    <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* --- LEFT SIDEBAR --- */}
+      <div className="lg:col-span-4 space-y-6 pb-20 text-left">
+        {/* Order Steps */}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-stone-100 shadow-sm">
+          <div className="flex items-center gap-3 text-[#B99470] mb-6">
+            <div className="w-10 h-10 rounded-full bg-[#B99470]/10 flex items-center justify-center">
+              <Navigation size={20} className="animate-pulse" />
+            </div>
+            <div className="flex items-center justify-between mb-6 w-full">
+              <div>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-stone-400">
+                  Order #{activeOrderId?.slice(0, 5) || '8192'}
+                </h3>
+              </div>
+              <div>
+                <p className="text-lg font-serif italic text-black">
+                  Arrival in {formatTime(timeLeft)}
+                </p>
+              </div>
             </div>
           </div>
+
+          <div className="space-y-8">
+            {[
+              { icon: Package, label: "Order Received", desc: "Chef starting preparation" },
+              { icon: Flame, label: "In the Oven", desc: "Golden crust forming" },
+              { icon: Bike, label: "Out for Delivery", desc: "Heading your way" },
+              { icon: CheckCircle2, label: "Delivered", desc: "Enjoy your snacks!" }
+            ].map((step, idx) => (
+              <div
+                key={idx}
+                className={`flex items-start gap-4 transition-all duration-700 ${
+                  idx <= trackStep ? 'opacity-100' : 'opacity-20'
+                }`}
+              >
+                <div className="relative">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      idx <= trackStep
+                        ? 'bg-[#B99470] text-white shadow-lg'
+                        : 'bg-stone-100 text-stone-400'
+                    }`}
+                  >
+                    <step.icon size={14} />
+                  </div>
+                  {idx < 3 && (
+                    <div
+                      className={`absolute top-8 left-1/2 -translate-x-1/2 w-px h-8 ${
+                        idx < trackStep ? 'bg-[#B99470]' : 'bg-stone-100'
+                      }`}
+                    />
+                  )}
+                </div>
+                <div className="pt-1">
+                  <p className="text-[11px] font-black uppercase tracking-tight text-black">
+                    {step.label}
+                  </p>
+                  <p className="text-[10px] text-stone-400">{step.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Rider Info */}
+        <div className="bg-[#1a1a1a] p-8 rounded-[2.5rem] text-white space-y-4 shadow-xl">
+          <div className="flex items-center gap-4">
+            <img
+              src={orderRider.image}
+              className="w-12 h-12 rounded-full object-cover border-2 border-[#B99470]"
+              alt="Rider"
+            />
+            <div>
+              <p className="text-[10px] font-black uppercase text-[#B99470]">
+                Your Coastal Rider
+              </p>
+              <p className="text-sm font-serif">{orderRider.name}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between pt-4 border-t border-white/10">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/40">
+              <Bike size={12} /> {orderRider.bikeNumber}
+            </div>
+            <button className="text-[10px] font-black uppercase text-[#B99470] flex items-center gap-2 hover:text-white transition-colors">
+              <MessageSquare size={14} /> Call Salim
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* --- MAP COLUMN --- */}
+      <div className="lg:col-span-8 h-[600px] lg:mb-20 rounded-[3rem] overflow-hidden shadow-xl relative border-[1px] border-stone-200">
+        {isLoaded ? (
+          <GoogleMap
+            mapContainerStyle={{ width: '100%', height: '100%' }}
+            center={customerPos}
+            zoom={14}
+          >
+            {/* Customer */}
+            <Marker
+              position={customerPos}
+              icon={{
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: '#3B82F6',
+                fillOpacity: 1,
+                strokeWeight: 2,
+                strokeColor: 'white'
+              }}
+            />
+
+            {/* Rider */}
+            <Marker
+              position={riderPos}
+              icon={{
+                url: orderRider.image,
+                scaledSize: new window.google.maps.Size(40, 40)
+              }}
+            />
+          </GoogleMap>
+        ) : (
+          <div className="flex items-center justify-center h-full w-full">
+            <p>Loading map...</p>
+          </div>
         )}
+
+        {/* Map Controls */}
+        <div className="absolute top-4 right-4 flex flex-col gap-2">
+          <button className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-stone-500 hover:text-black transition-colors border border-stone-100">
+            <Layers size={18} />
+          </button>
+          <button className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-[#B99470] hover:text-[#B99470] transition-colors border border-stone-100">
+            <LocateFixed size={18} />
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
       </main>
 
       <footer className="bg-[#1a1a1a] text-white pt-24 pb-12 px-8">
