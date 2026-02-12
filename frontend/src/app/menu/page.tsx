@@ -205,8 +205,9 @@ const CATEGORIES = [
 const formatTime = (seconds: number) => {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return `${m}:${s < 10 ? '0' : ''}${s}`;
+  return `${m}:${s.toString().padStart(2, '0')}`;
 };
+
 
 
 
@@ -269,37 +270,49 @@ const { isLoaded } = useJsApiLoader({
   });
   // Tracking Simulation Logic
   useEffect(() => {
-    if (!activeOrderId) return; // only start when an order exists
+  if (!activeOrderId) return;
 
-    setTrackStep(0);
-    setRiderPos(originPos);
-    setTimeLeft(240);
+  const TOTAL_TIME = 180; // 3 minutes in seconds
+  setTimeLeft(TOTAL_TIME);
+  setTrackStep(0);
+  setRiderPos(originPos);
 
-    const interval = setInterval(() => {
-      setTrackStep(prev => {
-        if (prev < 3) return prev + 1;
+  const interval = setInterval(() => {
+    setTimeLeft(prev => {
+      const newTime = prev - 1;
+
+      // progress from 0 → 1
+      const progress = (TOTAL_TIME - newTime) / TOTAL_TIME;
+
+      // 🚀 Smooth rider movement
+      const lat =
+        originPos.lat +
+        (customerPos.lat - originPos.lat) * progress;
+
+      const lng =
+        originPos.lng +
+        (customerPos.lng - originPos.lng) * progress;
+
+      setRiderPos({ lat, lng });
+
+      // ✅ Sync tracking steps to progress
+      if (progress >= 1) setTrackStep(3);
+      else if (progress >= 0.66) setTrackStep(2);
+      else if (progress >= 0.33) setTrackStep(1);
+      else setTrackStep(0);
+
+      if (newTime <= 0) {
         clearInterval(interval);
-        return prev;
-      });
+        return 0;
+      }
 
-      setRiderPos(prev => {
-        const step = 0.0005;
-        const latDiff = customerPos.lat - prev.lat;
-        const lngDiff = customerPos.lng - prev.lng;
+      return newTime;
+    });
+  }, 1000); // every second
 
-        if (Math.abs(latDiff) < 0.0001 && Math.abs(lngDiff) < 0.0001) return customerPos;
+  return () => clearInterval(interval);
+}, [activeOrderId]);
 
-        return {
-          lat: prev.lat + latDiff * step * 10,
-          lng: prev.lng + lngDiff * step * 10
-        };
-      });
-
-      setTimeLeft(prev => (prev > 0 ? prev - 5 : 0));
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [activeOrderId]);
 
   const handleAddToCart = () => {
     if (!selectedProduct) return;
